@@ -1,0 +1,25 @@
+%dw 2.0
+
+type auto_54f4765a_1fd7_4fd3_992b_db2c139c1262_Output_Payload = {
+  Department: {
+    SALARY: Number, 
+    DESIGNATION: String, 
+    DATEOFJOINING: String, 
+    USERID: String, 
+    DEPTID: String, 
+    PREVIOUSEMPLOYER: String, 
+    _?: Any
+  }, 
+  Personal: {
+    MIDDLENAME: String, 
+    LASTNAME: String, 
+    PHONE: Number, 
+    USERID: String, 
+    FIRSTNAME: String, 
+    ADDRESS1: String, 
+    ADDRESS2: String, 
+    _?: Any
+  }, 
+  _?: Any
+}
+

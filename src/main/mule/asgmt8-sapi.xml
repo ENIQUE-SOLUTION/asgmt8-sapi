@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="05438a52-46d8-4ca2-9212-90e0c6fefadb" >
+		<db:oracle-connection host="localhost" user="system" password="tiger" instance="oracle" />
+	</db:config>
+	<flow name="asgmt8-sapiFlow" doc:id="54f4765a-1fd7-4fd3-992b-db2c139c1262" >
+		<set-variable value='#[{&#10;("USERID1" : attributes.queryParams.USERID1) if (attributes.queryParams.USERID1 != null),&#10;&#10;("USERID2" : attributes.queryParams.USERID2) if (attributes.queryParams.USERID2 != null),&#10;&#10;("USERID3" : attributes.queryParams.USERID3) if (attributes.queryParams.USERID3 != null)&#10;}]' doc:name="USERID" doc:id="4a45b375-2225-4376-8a61-c9b6046627c0" variableName="USERID" />
+		<ee:transform doc:name="vars.USERID and empty json variable" doc:id="2fb9a76a-1684-4f49-b441-d902161b9e68">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.USERID]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="output"><![CDATA[%dw 2.0
+output application/json
+---
+[]]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="payload" doc:id="90491d45-a6aa-4dcf-89b4-44becc0ac42f" message="#[vars.USERID]"/>
+		<foreach doc:name="For Each" doc:id="287de523-985b-47cb-93e3-b65835b94f6b" >
+			<set-variable value='#[{&#10;("USERID" : payload.USERID1) if (payload.USERID1 != null),&#10;&#10;("USERID" : payload.USERID2) if (payload.USERID2 != null),&#10;&#10;("USERID" : payload.USERID3) if (payload.USERID3 != null)&#10;}]' doc:name="wrongUSERID" doc:id="ecaf8950-c679-49be-a3bb-666ad41e30d1" variableName="wrongUSERID" />
+			<db:select doc:id="bea1db9f-2d5f-4e8a-bf08-0d1e21907087" config-ref="Database_Config" doc:name="Select" >
+				<db:sql ><![CDATA[select * from DETAILS where USERID IN(:USERID1,:USERID2,:USERID3)]]></db:sql>
+				<db:input-parameters ><![CDATA[#[{
+	USERID1: payload.USERID1,
+	USERID2: payload.USERID2,
+	USERID3: payload.USERID3
+}]]]></db:input-parameters>
+			</db:select>
+			<ee:transform doc:name="Transform to JSON payload" doc:id="d535ebf6-4f64-4d28-ab48-0158ca24cb72" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<validation:is-not-empty-collection doc:id="877bfe44-1360-4187-bcf0-946258b2a310" doc:name="Is not empty collection" />
+			<ee:transform doc:name="Transform to JSON payload1" doc:id="4d201622-70e4-46d8-a3de-316b3308338e" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload map(object, index) -> { 
+    query: "select USERID," ++ object.COLUMNNAMES ++ " from " ++ object.TABLENAME ++ " where USERID = '" ++ object.USERID ++ "'"
+})]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<parallel-foreach doc:name="Parallel For Each" doc:id="c3743326-2a15-4430-b383-d78e6fb6da5d" >
+				<db:select doc:id="a268ed19-971a-461e-a8ab-b70862e5d05d" config-ref="Database_Config" doc:name="Select_from_both_tables" >
+					<db:sql ><![CDATA[#[payload."query"]]]></db:sql>
+				</db:select>
+			</parallel-foreach>
+			<ee:transform doc:name="flatten (payload..*payload)" doc:id="972c0f7e-2546-4696-82aa-20b8c56761d7" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten (payload..*payload)]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<set-variable value='#[output application/json --- vars."output" + payload]' doc:name="vars.output + payload" doc:id="2b7d7375-4501-4a47-90fa-83d87b2612c0" variableName="output" />
+		</foreach>
+		<ee:transform doc:name='vars."output" that is final payload' doc:id="45093fe5-5a8e-4b93-944c-72c5a867df79" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+(vars."output") ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="all filters on (payload)" doc:id="97be481e-c2d5-46e4-baad-01e3dbb4fd6a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+(((flatten(payload) distinctBy $ orderBy ((item, index) -> item.USERID)) groupBy ((item, index) -> item.USERID)) groupBy ((value, key) -> "DEPTID" ++ value[1].DEPTID))]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="payload" doc:id="0c20bc58-d0fe-4f15-a6cb-3c03b46319d5" message="#[output application/json --- &#10;payload]" />
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a840c7ec-dda5-49fb-afd2-073971133534" type="DB:BAD_SQL_SYNTAX, DB:CONNECTIVITY, DB:QUERY_EXECUTION" >
+				<ee:transform doc:name="error, message and details" doc:id="79f196d8-6abe-48f4-9f78-06a48dd8270b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "error": error.errorType.identifier,
+   "message": "Incorrect username and password",
+   "detail": error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="payload" doc:id="a986190f-642f-4dda-9413-64231b5ddf5c" message="#[payload]" />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="faaddfe6-68df-4ab5-83b3-0e1d2bfe1545" type="ANY">
+				<ee:transform doc:name="error and message" doc:id="d95c91b2-0e76-420d-b34f-b2ed5567e282">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var a = vars.wrongUSERID.USERID
+---
+{
+	"ERROR": error.errorType.identifier,
+	"Message": "No records available for UserID = " ++ a ++ ". Hence cannot proceed with the execution",
+	"detail": error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="payload" doc:id="09bccc21-144e-4091-a76a-06ef52376e0c" message="#[payload]" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="asgmt8-sapiFlow1" doc:id="336f7b4d-aa8a-429e-82cf-12aa97c530cf" initialState="stopped">
+		<ee:transform doc:name="Transform Message" doc:id="8a19ae9e-4935-4782-b62c-221566112579">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Personal: {
+    USERID: "UID1303",
+    FIRSTNAME: "RUPESH",
+    MIDDLENAME: "SHARAD",
+    LASTNAME: "MHASE",
+    ADDRESS1: "SHRUSHTI APARTMENT",
+    ADDRESS2: "DOCKYARD LANE",
+    PHONE: 4567238894
+  },
+  Department: {
+    USERID: "UID1303",
+    DEPTID: "1503",
+    DESIGNATION: "ENGINEER",
+    DATEOFJOINING: "2020-10-10",
+    SALARY: 26000,
+    PREVIOUSEMPLOYER: "ABC Solutions"
+  }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
