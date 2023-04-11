@@ -30,6 +30,25 @@
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
+					<cloudHubDeployment>
+						<uri>https://anypoint.mulesoft.com</uri>
+						<username>RupeshMulesoft</username>
+						<password>RupeshMulesoft@2023</password>
+						<environment>Sandbox</environment>
+						<applicationName>asgmt8-sapi</applicationName>
+						<workerType>Micro</workerType>
+						<workers>1</workers>
+						<muleVersion>4.4.0</muleVersion>
+						<objectStoreV2>true</objectStoreV2>
+					</cloudHubDeployment>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.mule.tools.maven</groupId>
+				<artifactId>mule-maven-plugin</artifactId>
+				<version>${mule.maven.plugin.version}</version>
+				<extensions>true</extensions>
+				<configuration>
 					<sharedLibraries>
 						<sharedLibrary>
 							<groupId>com.mycompany</groupId>
