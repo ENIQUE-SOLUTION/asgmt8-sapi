@@ -44,7 +44,7 @@ payload]]></ee:set-payload>
 				</ee:message>
 			</ee:transform>
 			<validation:is-not-empty-collection doc:id="877bfe44-1360-4187-bcf0-946258b2a310" doc:name="Is not empty collection" />
-			<ee:transform doc:name="Transform to JSON payload1" doc:id="4d201622-70e4-46d8-a3de-316b3308338e" >
+			<ee:transform doc:name="Transform to JSON payload" doc:id="4d201622-70e4-46d8-a3de-316b3308338e" >
 				<ee:message >
 					<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -86,38 +86,5 @@ output application/json
 			</ee:message>
 		</ee:transform>
 		<logger level="INFO" doc:name="payload" doc:id="0c20bc58-d0fe-4f15-a6cb-3c03b46319d5" message="#[output application/json --- &#10;payload]" />
-		<error-handler >
-			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a840c7ec-dda5-49fb-afd2-073971133534" type="DB:BAD_SQL_SYNTAX, DB:CONNECTIVITY, DB:QUERY_EXECUTION" >
-				<ee:transform doc:name="error, message and details" doc:id="79f196d8-6abe-48f4-9f78-06a48dd8270b" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-   "error": error.errorType.identifier,
-   "message": "Incorrect username and password",
-   "detail": error.description
-}]]></ee:set-payload>
-					</ee:message>
-				</ee:transform>
-				<logger level="INFO" doc:name="payload" doc:id="a986190f-642f-4dda-9413-64231b5ddf5c" message="#[payload]" />
-			</on-error-propagate>
-			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="faaddfe6-68df-4ab5-83b3-0e1d2bfe1545" type="ANY">
-				<ee:transform doc:name="error and message" doc:id="d95c91b2-0e76-420d-b34f-b2ed5567e282">
-					<ee:message>
-						<ee:set-payload><![CDATA[%dw 2.0
-output application/json
-var a = vars.wrongUSERID.USERID
----
-{
-	"ERROR": error.errorType.identifier,
-	"Message": "No records available for UserID = " ++ a ++ ". Hence cannot proceed with the execution",
-	"detail": error.description
-}]]></ee:set-payload>
-					</ee:message>
-				</ee:transform>
-				<logger level="INFO" doc:name="payload" doc:id="09bccc21-144e-4091-a76a-06ef52376e0c" message="#[payload]" />
-			</on-error-propagate>
-		</error-handler>
 	</flow>
 </mule>

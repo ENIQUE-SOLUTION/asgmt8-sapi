@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<error-handler name="globalErrorHandlerError_Handler" doc:id="4ade7f0c-802b-4888-9d97-825613bf409f" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="900b93f1-3c81-46c2-8967-1b150cba8989" type="DB:BAD_SQL_SYNTAX, DB:CONNECTIVITY, DB:QUERY_EXECUTION" >
+			<ee:transform doc:name="error, message and details" doc:id="4ef9004a-6192-43ac-adfd-c071400ff4e6" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "error": error.errorType.identifier,
+   "message": "Incorrect username and password",
+   "detail": error.description
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="payload" doc:id="ad9c65d6-7772-4ec3-a864-6968ae0ef5d5" message="#[payload]" />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="4a0e5a8a-8a82-4f12-accf-b4abab5f23b4" type="ANY" >
+			<ee:transform doc:name="error and message" doc:id="19f3445b-fa9a-4349-8b06-8230e4d7a988" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var a = vars.wrongUSERID.USERID
+---
+{
+	"ERROR": error.errorType.identifier,
+	"Message": "No records available for UserID = " ++ a ++ ". Hence cannot proceed with the execution",
+	"detail": error.description
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="payload" doc:id="eb163c90-6962-49f0-99fc-0509f164b8db" message="#[payload]" />
+		</on-error-propagate>
+	</error-handler>
+</mule>
