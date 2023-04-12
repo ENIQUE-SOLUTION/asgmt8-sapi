@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
     <http:listener-config name="assignment_no_1-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="${http.port}" />
+        <http:listener-connection host="0.0.0.0" port="${http.port1}" />
     </http:listener-config>
     <apikit:config name="assignment_no_1-config" api="resource::93382256-cd13-44c5-ad14-4d8332cd727b:assignment_no_1:1.0.0:raml:zip:assignment_no_1.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <flow name="assignment_no_1-main">
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="d0acf78c-2e9d-47e2-baa5-e0408fb7e683" >
+		<http:listener-connection host="0.0.0.0" port="${http.port2}" />
+	</http:listener-config>
+	<flow name="assignment_no_1-main">
         <http:listener config-ref="assignment_no_1-httpListenerConfig" path="/api/*" doc:name="HTTP:8046/api/details">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
@@ -126,4 +130,24 @@ output application/json
     <flow name="get:\details:assignment_no_1-config">
 		<flow-ref doc:name="asgmt8-sapiFlow" doc:id="69d1c345-35df-4731-9486-55c34f1a59b5" name="asgmt8-sapiFlow"/>
     </flow>
+	<flow name="interfaceFlow" doc:id="27d06df9-c0c7-4a94-91c0-3a877cba92e6" >
+		<http:listener doc:name="HTTP:8047/retrievevalue" doc:id="e5b12e32-1c8c-4756-b856-8d27e238425c" config-ref="HTTP_Listener_config" path="/retrievevalue"/>
+		<os:retrieve-all-keys doc:name="Retrieve all keys" doc:id="9200a845-7dbc-4e5b-9f8a-d97e7dc4d6a8" objectStore="Object_storeAsgmt8-sapi"/>
+		<set-variable value="#[%dw 2.0&#10;output application/json&#10;---&#10;[]]" doc:name="output" doc:id="861a269d-387e-40c0-9d2a-a8594effd20c" variableName="output"/>
+		<foreach doc:name="For Each" doc:id="5b5fee54-927d-4f3e-8362-befe7a36ab0d" >
+			<set-variable value="#[payload]" doc:name="vkey" doc:id="eb1f9943-b079-4b4b-93ee-56d62c6a35dc" variableName="vkey"/>
+			<os:retrieve doc:name="Retrieve" doc:id="983b4ddf-4d70-45f8-a4c4-2b3caa927e5a" key="#[vars.vkey]" objectStore="Object_storeAsgmt8-sapi"/>
+			<logger level="INFO" doc:name="payload" doc:id="2417b60a-32eb-46a3-90d8-ef9a642429cb" message="#[payload]"/>
+			<set-variable value='#[output application/json --- vars."output" + payload]' doc:name="vars.output + payload" doc:id="dfaae314-3af2-403c-b731-06909656295f" variableName="output"/>
+		</foreach>
+		<ee:transform doc:name="final payload" doc:id="c014009a-838e-40c8-87b3-1a5ffd92422a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+(vars."output")]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="payload" doc:id="f56ac34d-440e-41b4-b10b-1eaf6a0b29d1" message="#[payload]"/>
+	</flow>
 </mule>
